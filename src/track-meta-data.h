@@ -34,7 +34,7 @@
 #include <unordered_map>
 
 #include <logging.h>
-#include <pugixml/pugixml.hpp>
+#include <tinyxml2/tinyxml2.h>
 
 /**
   @brief  Class to contain and maintain a map of supported track metadata tags
@@ -183,7 +183,7 @@ class TrackMetadata {
   };
 
   void Notify() { id_++; }
-  void CreateXmlRoot(pugi::xml_document& xml_document) const;
+  void CreateXmlRoot(tinyxml2::XMLDocument* xml_document) const;
 
   uint32_t id_ = 0;
   std::map<Tag, Entry> tags_;

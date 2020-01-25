@@ -35,25 +35,26 @@
   @param  xml_document pugi::xml_document to add root item to
   @retval none
 */
-void TrackMetadata::CreateXmlRoot(pugi::xml_document& xml_document) const {
-  pugi::xml_node root = xml_document.append_child("DIDL-Lite");
-  root.append_attribute("xmlns").set_value(
-      "urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/");
-  root.append_attribute("xmlns:dc")
-      .set_value("http://purl.org/dc/elements/1.1/");
-  root.append_attribute("xmlns:upnp")
-      .set_value("urn:schemas-upnp-org:metadata-1-0/upnp/");
+void TrackMetadata::CreateXmlRoot(tinyxml2::XMLDocument* xml_document) const {
+  tinyxml2::XMLElement* root = xml_document->NewElement("DIDL-Lite");
+  xml_document->InsertFirstChild(root);
 
+  root->SetAttribute("xmlns", "urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/");
+  root->SetAttribute("xmlns:dc", "http://purl.org/dc/elements/1.1/");
+  root->SetAttribute("xmlns:upnp", "urn:schemas-upnp-org:metadata-1-0/upnp/");
+  
   // An "item" element must have
   // dc:title element first
   // upnp:class element
   // id attribute
   // parentId attribute
   // restricted attribute
-  pugi::xml_node item = root.append_child("item");
-  item.append_attribute("id").set_value("");
-  item.append_attribute("parentID").set_value("0");
-  item.append_attribute("restricted").set_value("false");
+  tinyxml2::XMLElement* item = xml_document->NewElement("item");
+  root->InsertEndChild(item);
+
+  item->SetAttribute("id", "");
+  item->SetAttribute("parentID", "0");
+  item->SetAttribute("restricted", "false");
 }
 
 /**
@@ -64,22 +65,25 @@ void TrackMetadata::CreateXmlRoot(pugi::xml_document& xml_document) const {
   @retval std::string Metadata as XML (DIDL-Lite)
 */
 std::string TrackMetadata::ToXml(const std::string& xml) const {
-  pugi::xml_document xml_document;
+  tinyxml2::XMLDocument xml_document;
 
   // Parse existing document
-  xml_document.load_string(xml.c_str());
+  xml_document.Parse(xml.c_str());
 
-  pugi::xml_node root = xml_document.child("DIDL-Lite");
-  pugi::xml_node item = root.child("item");
+  tinyxml2::XMLElement* root = xml_document.FirstChildElement("DIDL-Lite");
+  tinyxml2::XMLElement* item = NULL;
+
+  if (root != NULL)
+    item = root->FirstChildElement("item");
 
   // Existing format sucks, just make our own
   if (root == NULL || item == NULL) {
-    xml_document.reset();
-    CreateXmlRoot(xml_document);
+    xml_document.Clear();
+    CreateXmlRoot(&xml_document);
 
     // Update locals with new document objects
-    root = xml_document.child("DIDL-Lite");
-    item = root.child("item");
+    root = xml_document.FirstChildElement("DIDL-Lite");
+    item = root->FirstChildElement("item");
   }
 
   bool modified = false;
@@ -90,19 +94,21 @@ std::string TrackMetadata::ToXml(const std::string& xml) const {
     // Skip if no value
     if (value.empty()) continue;
 
-    pugi::xml_node xml = item.child(tag.c_str());
-    if (xml) {
+    tinyxml2::XMLElement* element = item->FirstChildElement(tag.c_str());
+    if (element) {
       // Check if already equal to avoid ID update
-      if (value.compare(xml.first_child().value()) == 0) continue;
+      if (value.compare(element->GetText()) == 0) continue;
 
       // Update existing XML element
-      xml.first_child().set_value(value.c_str());
+      element->SetText(value.c_str());
 
       modified = true;
     } else {
       // Insert new XML element
-      xml = item.append_child(tag.c_str());
-      xml.append_child(pugi::node_pcdata).set_value(value.c_str());
+      element = xml_document.NewElement(tag.c_str());
+      item->InsertEndChild(element);
+
+      element->SetText(value.c_str());
 
       modified = true;
     }
@@ -112,12 +118,11 @@ std::string TrackMetadata::ToXml(const std::string& xml) const {
     char idString[20] = {0};
     snprintf(idString, sizeof(idString), "gmr-%08x", id_);
 
-    item.attribute("id").set_value(idString);
+    item->SetAttribute("id", idString);
   }
 
-  std::ostringstream stream;
-  xml_document.save(stream, "\t",
-                    pugi::format_default | pugi::format_no_declaration);
+  tinyxml2::XMLPrinter printer;
+  xml_document.Print(&printer);
 
-  return stream.str();
+  return printer.CStr();
 }

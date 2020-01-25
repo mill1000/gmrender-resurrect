@@ -14,6 +14,6 @@ Makefile.in
 src/.deps
 src/git-version.h
 src/gmediarender
-src/pugixml/.deps
-src/pugixml/.dirstamp
+src/tinyxml2/.deps
+src/tinyxml2/.dirstamp
 stamp-h1
