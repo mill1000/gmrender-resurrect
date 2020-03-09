@@ -36,6 +36,7 @@
 #endif
 
 #include <assert.h>
+#include <gio/gio.h>
 #include <glib.h>
 #include <ithread.h>
 #include <limits.h>
@@ -46,6 +47,7 @@
 #include <unistd.h>
 #include <upnp.h>
 
+#include <algorithm>
 #include <iostream>
 
 #include "git-version.h"
@@ -65,6 +67,7 @@ static gboolean show_control_scpd = FALSE;
 static gboolean show_transport_scpd = FALSE;
 static gboolean show_outputs = FALSE;
 static gboolean daemon_mode = FALSE;
+static gboolean dbus_mode = FALSE;
 
 static const gchar *interface_name = NULL;
 static int listen_port = 49494;
@@ -101,6 +104,8 @@ static GOptionEntry option_entries[] = {
     {"pid-file", 'P', 0, G_OPTION_ARG_STRING, &pid_file,
      "File the process ID should be written to.", NULL},
     {"daemon", 'd', 0, G_OPTION_ARG_NONE, &daemon_mode, "Run as daemon.", NULL},
+    {"dbus", 0, 0, G_OPTION_ARG_NONE, &dbus_mode, "Enable D-Bus signalling.",
+     NULL},
     {"mime-filter", 0, 0, G_OPTION_ARG_STRING, &mime_filter,
      "Filter the supported media types. "
      "e.g. Audio only: '--mime-filter audio'. Disable FLAC: '--mime-filter "
@@ -202,6 +207,36 @@ static void init_logging(const char *log_file) {
             "(or --logfile=stdout for console)\n",
             PACKAGE_STRING, version);
   }
+}
+
+static void configure_dbus(const char *uuid) {
+  // Replace '-' in UUID string for D-Bus compat
+  std::string safe_uuid(uuid);
+  std::replace(safe_uuid.begin(), safe_uuid.end(), '-', '_');
+
+  // Construct an object path for this instance
+  std::string object = "/com/hzeller/gmedia_resurrect/" + safe_uuid;
+
+  // Connect to the system bus
+  GDBusConnection *connection = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
+  if (connection == NULL) {
+    Log_error("main", "Failed to connect to system D-Bus.");
+    return;
+  }
+
+  Log_info("main", "Notifying D-Bus at %s", object.c_str());
+
+  // Signal D-Bus when transport state changes
+  upnp_transport_register_variable_listener(
+      [connection, object](int, const std::string &var_name,
+                           const std::string &, const std::string &new_value) {
+        if (var_name != "TransportState") return;
+
+        g_dbus_connection_emit_signal(
+            connection, NULL, object.c_str(),
+            "com.hzeller.gmedia_resurrect.v1.Transport", "State",
+            g_variant_new("(s)", new_value.c_str()), NULL);
+      });
 }
 
 int main(int argc, char **argv) {
@@ -313,6 +348,9 @@ int main(int argc, char **argv) {
       log_variable_change("control", var_name, new_value);
     });
   }
+
+  // Enable d-bus signalling
+  if (dbus_mode) configure_dbus(uuid);
 
   // Write both to the log (which might be disabled) and console.
   Log_info("main", "Ready for rendering.");
