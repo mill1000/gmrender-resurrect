@@ -322,6 +322,11 @@ int main(int argc, char **argv)
 							(void*) "control");
 	}
 
+#ifdef ENABLE_MPRIS
+  // Enable d-bus signaling
+  DBusNotification::Configure(uuid);
+#endif
+
 	// Write both to the log (which might be disabled) and console.
 	Log_info("main", "Ready for rendering.");
 	fprintf(stderr, "Ready for rendering.\n");
