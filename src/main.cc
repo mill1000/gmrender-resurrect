@@ -36,7 +36,6 @@
 #endif
 
 #include <assert.h>
-#include <gio/gio.h>
 #include <glib.h>
 #include <ithread.h>
 #include <limits.h>
@@ -47,7 +46,6 @@
 #include <unistd.h>
 #include <upnp.h>
 
-#include <algorithm>
 #include <iostream>
 
 #include "dbus_notification.h"
