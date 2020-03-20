@@ -11,7 +11,8 @@ gmediarender_SOURCES = main.cc git-version.h \
 	output.cc output.h \
 	logging.h logging.cc \
 	xmldoc.cc xmldoc.h \
-	xmlescape.cc xmlescape.h
+	xmlescape.cc xmlescape.h \
+	dbus_notification.cc dbus_notification.h
 
 if HAVE_GST
 gmediarender_SOURCES += \

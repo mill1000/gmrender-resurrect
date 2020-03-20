@@ -50,6 +50,7 @@
 #include <algorithm>
 #include <iostream>
 
+#include "dbus_notification.h"
 #include "git-version.h"
 #include "logging.h"
 #include "output.h"
@@ -209,36 +210,6 @@ static void init_logging(const char *log_file) {
   }
 }
 
-static void configure_dbus(const char *uuid) {
-  // Replace '-' in UUID string for D-Bus compat
-  std::string safe_uuid(uuid);
-  std::replace(safe_uuid.begin(), safe_uuid.end(), '-', '_');
-
-  // Construct an object path for this instance
-  std::string object = "/com/hzeller/gmedia_resurrect/" + safe_uuid;
-
-  // Connect to the system bus
-  GDBusConnection *connection = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
-  if (connection == NULL) {
-    Log_error("main", "Failed to connect to system D-Bus.");
-    return;
-  }
-
-  Log_info("main", "Notifying D-Bus at %s", object.c_str());
-
-  // Signal D-Bus when transport state changes
-  upnp_transport_register_variable_listener(
-      [connection, object](int, const std::string &var_name,
-                           const std::string &, const std::string &new_value) {
-        if (var_name != "TransportState") return;
-
-        g_dbus_connection_emit_signal(
-            connection, NULL, object.c_str(),
-            "com.hzeller.gmedia_resurrect.v1.Transport", "State",
-            g_variant_new("(s)", new_value.c_str()), NULL);
-      });
-}
-
 int main(int argc, char **argv) {
   int rc;
   struct upnp_device_descriptor *upnp_renderer;
@@ -350,7 +321,7 @@ int main(int argc, char **argv) {
   }
 
   // Enable d-bus signalling
-  if (dbus_mode) configure_dbus(uuid);
+  if (dbus_mode) DBusNotification::Configure(uuid);
 
   // Write both to the log (which might be disabled) and console.
   Log_info("main", "Ready for rendering.");
