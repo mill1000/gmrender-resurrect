@@ -47,9 +47,6 @@ class DBusNotification {
     // Construct a unique name for this instance
     std::string name = "org.mpris.MediaPlayer2.gmediarender.uuid" + safe_uuid;
 
-    media_player_ = nullptr;
-    player_ = nullptr;
-
     // TODO free later
     g_bus_own_name(G_BUS_TYPE_SYSTEM, name.c_str(), G_BUS_NAME_OWNER_FLAGS_REPLACE, BusAcquired, NameAcquired, NameLost, NULL, NULL);
 
@@ -60,9 +57,7 @@ class DBusNotification {
                              const std::string &new_value) {
           if (var_name != "TransportState") return;
 
-          if (player_ == nullptr) return;
-
-          media_player2_player_set_playback_status(player_, transport_state_map_[new_value].c_str());
+          media_player_.SetPlaybackStatus(transport_state_map_[new_value]);
         });
 
     upnp_control_register_variable_listener(
@@ -71,71 +66,112 @@ class DBusNotification {
                              const std::string &new_value) {
           if (var_name != "Volume") return;
 
-          if (player_ == nullptr) return;
-
-          media_player2_player_set_volume(player_, std::stod(new_value)/100);
+          media_player_.SetVolume(std::stod(new_value)/100);
         });
   }
 
  private:
+  class MediaPlayer2
+  {
+    public:
+    void Export(GDBusConnection* connection, const char* path = DBusNotification::mpris_path_)
+    {
+      // Export this interface on the bus
+      g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(mpris_media_player_), connection, path, NULL);
+      g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON((MprisMediaPlayer2Player*)player_), connection, path, NULL);
+    }
+
+    void SetPlaybackStatus(const std::string& status)
+    {
+      mpris_media_player2_player_set_playback_status(player_, status.c_str());
+    }
+
+    void SetVolume(double volume)
+    {
+      mpris_media_player2_player_set_volume(player_, volume);
+    }
+
+    MediaPlayer2() : player_()
+    {
+      // Construct the MediaPlayer2 interface
+      mpris_media_player_ = mpris_media_player2_skeleton_new();
+
+      // We won't accept any quit, raise or fullscreen commands
+      mpris_media_player2_set_can_quit(mpris_media_player_, false);
+      mpris_media_player2_set_can_raise(mpris_media_player_, false);
+      mpris_media_player2_set_can_set_fullscreen(mpris_media_player_, false);
+
+      // Set the initial state
+      mpris_media_player2_set_has_track_list(mpris_media_player_, false);
+      mpris_media_player2_set_fullscreen(mpris_media_player_, false);
+
+      // TODO Technically we know enough to fill these, but we don't care really
+      mpris_media_player2_set_supported_uri_schemes(mpris_media_player_, NULL);
+      mpris_media_player2_set_supported_mime_types(mpris_media_player_, NULL);
+
+      // Set a friendly name
+      // TODO Fetch assigned name from cmd
+      mpris_media_player2_set_identity(mpris_media_player_, "GmediaRender");
+    }
+
+    MediaPlayer2(const MediaPlayer2&) = delete;  // Delete copy constructor
+
+  private:
+   class Player
+    {
+      public:
+      Player()
+      {
+        // Construct the MediaPlayer2.Player interface
+        mpris_player_ = mpris_media_player2_player_skeleton_new();
+
+        // We won't accept any control inputs
+        mpris_media_player2_player_set_can_control(mpris_player_, false);
+        mpris_media_player2_player_set_can_go_next(mpris_player_, false);
+        mpris_media_player2_player_set_can_go_previous(mpris_player_, false);
+        mpris_media_player2_player_set_can_play(mpris_player_, false);
+        mpris_media_player2_player_set_can_pause(mpris_player_, false);
+        mpris_media_player2_player_set_can_seek(mpris_player_, false);
+
+        // Set initial state
+        mpris_media_player2_player_set_playback_status(mpris_player_, "Stopped");
+        mpris_media_player2_player_set_position(mpris_player_, 0);
+        //mpris_media_player2_player_set_loop_status(player_, "None"); // Optional
+        mpris_media_player2_player_set_rate(mpris_player_, 1.0);
+        mpris_media_player2_player_set_minimum_rate(mpris_player_, 1.0);
+        mpris_media_player2_player_set_maximum_rate(mpris_player_, 1.0);
+        //mpris_media_player2_player_set_shuffle(player_, false); // Optional
+        mpris_media_player2_player_set_volume(mpris_player_, 1.0); // TODO Get inital volume
+      }
+
+      Player(const Player&) = delete;  // Delete copy constructor
+
+      operator MprisMediaPlayer2Player*()
+      {
+        return mpris_player_;
+      }
+
+      private:
+        MprisMediaPlayer2Player* mpris_player_;
+    };
+
+    Player player_;
+    
+    MprisMediaPlayer2* mpris_media_player_;
+  };
+
   static constexpr const char *TAG_ = "dbus";
 
   static constexpr const char *mpris_path_ = "/org/mpris/MediaPlayer2";
   static std::map<const std::string, const std::string> transport_state_map_;
 
-  static MediaPlayer2* media_player_;
-  static MediaPlayer2Player* player_;
+  static MediaPlayer2 media_player_;
 
   static void BusAcquired(GDBusConnection* connection, const gchar* name, gpointer user_data)
   {
     Log_info(TAG_, "Acquired bus. Exporting MPRIS objects.");
 
-    // Construct the MediaPlayer2 interface
-    media_player_ = media_player2_skeleton_new();
-
-    // We won't accept any quit, raise or fullscreen commands
-    media_player2_set_can_quit(media_player_, false);
-    media_player2_set_can_raise(media_player_, false);
-    media_player2_set_can_set_fullscreen(media_player_, false);
-    
-    // Set the initial state
-    media_player2_set_has_track_list(media_player_, false);
-    media_player2_set_fullscreen(media_player_, false);
-    
-    // TODO Technically we know enough to fill these, but we don't care really
-    media_player2_set_supported_uri_schemes(media_player_, NULL);
-    media_player2_set_supported_mime_types(media_player_, NULL);
-
-    // Set a friendly name
-    // TODO Fetch assigned name from cmd
-    media_player2_set_identity(media_player_, "GmediaRender");
-
-    // Export this interface on the bus
-    g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(media_player_), connection, mpris_path_, NULL);
-
-    // Construct the MediaPlayer2.Player interface
-    player_ = media_player2_player_skeleton_new();
-
-    // We won't accept any control inputs
-    media_player2_player_set_can_control(player_, false);
-    media_player2_player_set_can_go_next(player_, false);
-    media_player2_player_set_can_go_previous(player_, false);
-    media_player2_player_set_can_play(player_, false);
-    media_player2_player_set_can_pause(player_, false);
-    media_player2_player_set_can_seek(player_, false);
-    
-    // Set initial state
-    media_player2_player_set_playback_status(player_, "Stopped");
-    media_player2_player_set_position(player_, 0);
-    //media_player2_player_set_loop_status(player_, "None"); // Optional
-    media_player2_player_set_rate(player_, 1.0);
-    media_player2_player_set_minimum_rate(player_, 1.0);
-    media_player2_player_set_maximum_rate(player_, 1.0);
-    //media_player2_player_set_shuffle(player_, false); // Optional
-    media_player2_player_set_volume(player_, 1.0); // TODO Get inital volume
-
-    // Export interface on the bus
-    g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(player_), connection, mpris_path_, NULL);
+    media_player_.Export(connection);
   }
 
   static void NameAcquired(GDBusConnection* connection, const gchar* name, gpointer user_data)
@@ -147,7 +183,6 @@ class DBusNotification {
   {
     Log_warn(TAG_, "Lost '%s' on D-Bus", name);
   }
-
 };
 
 #endif

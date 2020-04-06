@@ -28,5 +28,4 @@ std::map<const std::string, const std::string>
                                               {"PAUSED_PLAYBACK", "PAUSED"},
                                               {"STOPPED", "STOPPED"}};
 
-MediaPlayer2* DBusNotification::media_player_ = nullptr;
-MediaPlayer2Player* DBusNotification::player_ = nullptr;
+DBusNotification::MediaPlayer2 DBusNotification::media_player_;

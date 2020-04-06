@@ -28,7 +28,7 @@ git-version.h: .FORCE
 	rm $@-new)
 
 mpris_interface.h mpris_interface.c:  mpris-spec/*.xml
-	gdbus-codegen --interface-prefix org.mpris --generate-c-code mpris_interface $^
+	gdbus-codegen --interface-prefix org.mpris --c-namespace Mpris --generate-c-code mpris_interface $^
 
 .FORCE:
 
