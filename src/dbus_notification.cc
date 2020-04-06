@@ -24,8 +24,8 @@
 #include "dbus_notification.h"
 
 std::map<const std::string, const std::string>
-    DBusNotification::transport_state_map_ = {{"PLAYING", "PLAYING"},
-                                              {"PAUSED_PLAYBACK", "PAUSED"},
-                                              {"STOPPED", "STOPPED"}};
+    DBusNotification::transport_state_map_ = {{"PLAYING", "Playing"},
+                                              {"PAUSED_PLAYBACK", "Paused"},
+                                              {"STOPPED", "Stopped"}};
 
 DBusNotification::MediaPlayer2 DBusNotification::media_player_;
