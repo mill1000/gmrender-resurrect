@@ -36,7 +36,7 @@ fi
 
 PKG_PROG_PKG_CONFIG
 
-PKG_CHECK_MODULES(GLIB, glib-2.0 gthread-2.0 gio-2.0, HAVE_GLIB=yes, HAVE_GLIB=no)
+PKG_CHECK_MODULES(GLIB, glib-2.0 gthread-2.0 gio-2.0 gio-unix-2.0, HAVE_GLIB=yes, HAVE_GLIB=no)
 
 # This is a bit crude, someone with more configure-fu please fix :)
 # We want either the new, or if that fails, the old version of gstreamer.

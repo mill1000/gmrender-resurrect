@@ -12,7 +12,8 @@ gmediarender_SOURCES = main.cc git-version.h \
 	logging.h logging.cc \
 	xmldoc.cc xmldoc.h \
 	xmlescape.cc xmlescape.h \
-	dbus_notification.cc dbus_notification.h
+	dbus_notification.cc dbus_notification.h \
+	mpris_interface.c mpris_interface.h
 
 if HAVE_GST
 gmediarender_SOURCES += \
@@ -25,6 +26,9 @@ git-version.h: .FORCE
 	$(AM_V_GEN)(echo "#define GM_COMPILE_VERSION \"$(shell git log -n1 --date=short --format='0.0.8_git%cd_%h' 2>/dev/null || echo -n '0.0.8')\"" > $@-new; \
 	cmp -s $@ $@-new || cp $@-new $@; \
 	rm $@-new)
+
+mpris_interface.h mpris_interface.c:  mpris-spec/*.xml
+	gdbus-codegen --interface-prefix org.mpris --generate-c-code mpris_interface $^
 
 .FORCE:
 

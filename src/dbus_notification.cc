@@ -27,3 +27,6 @@ std::map<const std::string, const std::string>
     DBusNotification::transport_state_map_ = {{"PLAYING", "PLAYING"},
                                               {"PAUSED_PLAYBACK", "PAUSED"},
                                               {"STOPPED", "STOPPED"}};
+
+MediaPlayer2* DBusNotification::media_player_ = nullptr;
+MediaPlayer2Player* DBusNotification::player_ = nullptr;
