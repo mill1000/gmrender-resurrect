@@ -48,7 +48,10 @@
 
 #include <iostream>
 
+#ifdef ENABLE_MPRIS
 #include "dbus_notification.h"
+#endif
+
 #include "git-version.h"
 #include "logging.h"
 #include "output.h"
@@ -66,7 +69,6 @@ static gboolean show_control_scpd = FALSE;
 static gboolean show_transport_scpd = FALSE;
 static gboolean show_outputs = FALSE;
 static gboolean daemon_mode = FALSE;
-static gboolean dbus_mode = FALSE;
 
 static const gchar *interface_name = NULL;
 static int listen_port = 49494;
@@ -103,8 +105,6 @@ static GOptionEntry option_entries[] = {
     {"pid-file", 'P', 0, G_OPTION_ARG_STRING, &pid_file,
      "File the process ID should be written to.", NULL},
     {"daemon", 'd', 0, G_OPTION_ARG_NONE, &daemon_mode, "Run as daemon.", NULL},
-    {"dbus", 0, 0, G_OPTION_ARG_NONE, &dbus_mode, "Enable D-Bus signalling.",
-     NULL},
     {"mime-filter", 0, 0, G_OPTION_ARG_STRING, &mime_filter,
      "Filter the supported media types. "
      "e.g. Audio only: '--mime-filter audio'. Disable FLAC: '--mime-filter "
@@ -318,8 +318,10 @@ int main(int argc, char **argv) {
     });
   }
 
-  // Enable d-bus signalling
-  if (dbus_mode) DBusNotification::Configure(uuid);
+#ifdef ENABLE_MPRIS
+  // Enable d-bus signaling
+  DBusNotification::Configure(uuid);
+#endif
 
   // Write both to the log (which might be disabled) and console.
   Log_info("main", "Ready for rendering.");
