@@ -45,3 +45,11 @@ git-version.h: .FORCE
 
 AM_CPPFLAGS = -include config.h $(GLIB_CFLAGS) $(GST_CFLAGS) $(LIBUPNP_CFLAGS) -DPKG_DATADIR=\"$(datadir)/gmediarender\"
 gmediarender_LDADD = $(GLIB_LIBS) $(GST_LIBS) $(LIBUPNP_LIBS)
+
+install-exec-hook:
+if ENABLE_MPRIS
+DBUS_POLICY_DIR=$(DESTDIR)/etc/dbus-1/system.d
+DBUS_POLICY_TARGET=$(DBUS_POLICY_DIR)/gmrender-resurrect-mpris-policy.conf
+	mkdir -p $(DBUS_POLICY_DIR)
+	[ -f $(DBUS_POLICY_TARGET) ] || cp scripts/gmrender-resurrect-mpris-policy.conf $(DBUS_POLICY_TARGET)
+endif
