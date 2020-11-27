@@ -326,8 +326,8 @@ int main(int argc, char **argv)
 	}
 
 #ifdef ENABLE_MPRIS
-  // Enable MPRIS D-Bus signaling
-  mpris_configure(uuid);
+	// Enable MPRIS D-Bus signaling
+	mpris_configure(uuid, friendly_name);
 #endif
 
 	// Write both to the log (which might be disabled) and console.
