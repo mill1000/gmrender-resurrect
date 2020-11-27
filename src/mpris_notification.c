@@ -242,12 +242,12 @@ void mpris_configure(const char* uuid, const char* friendly_name)
 
   for (size_t i = 0; i < sizeof(safe_uuid); i++)
   {
-    // Replace '-' in UUID string for D-Bus compat
+    // Replace '-' in UUID string with '_' for D-Bus compat
     if (safe_uuid[i] == '-')
       safe_uuid[i] = '_';
   }  
 
-  // Concast base name with safe uuid string
+  // Concat base name with safe uuid string
   strncat(name, safe_uuid, sizeof(safe_uuid));
 
   // Start acquiring the name on the system D-Bus
