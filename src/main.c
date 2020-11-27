@@ -61,7 +61,7 @@
 #include "upnp_transport.h"
 #include "upnp_connmgr.h"
 #ifdef ENABLE_MPRIS
-#include <mpris_notification.h>
+#include "mpris_notification.h"
 #endif
 
 static gboolean show_version = FALSE;
