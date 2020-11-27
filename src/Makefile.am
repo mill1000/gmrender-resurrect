@@ -27,7 +27,7 @@ $(mpris_TARGETS):  mpris-spec/*.xml
 	gdbus-codegen --interface-prefix org.mpris --c-namespace Mpris --generate-c-code mpris_interface $^
 
 gmediarender_SOURCES += \
-	dbus_notification.cc dbus_notification.h \
+	mpris_notification.c mpris_notification.h \
 	$(mpris_TARGETS)
 
 BUILT_SOURCES += $(mpris_TARGETS)

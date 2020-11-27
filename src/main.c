@@ -60,6 +60,9 @@
 #include "upnp_renderer.h"
 #include "upnp_transport.h"
 #include "upnp_connmgr.h"
+#ifdef ENABLE_MPRIS
+#include <mpris_notification.h>
+#endif
 
 static gboolean show_version = FALSE;
 static gboolean show_devicedesc = FALSE;
@@ -323,8 +326,8 @@ int main(int argc, char **argv)
 	}
 
 #ifdef ENABLE_MPRIS
-  // Enable d-bus signaling
-  DBusNotification::Configure(uuid);
+  // Enable MPRIS D-Bus signaling
+  mpris_configure(uuid);
 #endif
 
 	// Write both to the log (which might be disabled) and console.

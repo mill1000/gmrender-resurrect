@@ -1,5 +1,4 @@
-// -*- mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; -*-
-/* dbus_notification.c - D-Bus Status Notification
+/* mpris_notification.h - MPRIS D-Bus Status Notification
  *
  * Copyright (C) 2020 Tucker Kern
  *
@@ -21,11 +20,16 @@
  * MA 02110-1301, USA.
  *
  */
-#include "dbus_notification.h"
 
-std::map<const std::string, const std::string>
-    DBusNotification::transport_state_map_ = {{"PLAYING", "Playing"},
-                                              {"PAUSED_PLAYBACK", "Paused"},
-                                              {"STOPPED", "Stopped"}};
+#ifndef _MPRIS_NOTIFICATION_H
+#define _MPRIS_NOTIFICATION_H
 
-DBusNotification::MediaPlayer2 DBusNotification::media_player_;
+#include <gio/gio.h>
+#include <glib.h>
+
+#define MPRIS_PATH "/org/mpris/MediaPlayer2"
+#define MPRIS_BASE_NAME "org.mpris.MediaPlayer2.gmediarender.uuid"
+
+void mpris_configure(const char* uuid);
+
+#endif
