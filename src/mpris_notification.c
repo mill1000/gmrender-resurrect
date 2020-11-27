@@ -41,6 +41,12 @@ static struct
   MprisMediaPlayer2Player* player;
 } mpris;
 
+/**
+  @brief  Initialize the MPRIS MediaPlayer2 Player object
+
+  @param  none
+  @retval none
+*/
 static void mpris_player_init()
 {
   // Construct the MediaPlayer2.Player interface
@@ -62,14 +68,17 @@ static void mpris_player_init()
   mpris_media_player2_player_set_minimum_rate(mpris.player, 1.0);
   mpris_media_player2_player_set_maximum_rate(mpris.player, 1.0);
   //mpris_media_player2_player_set_shuffle(player_, false); // Optional
-  mpris_media_player2_player_set_volume(mpris.player, 1.0); // TODO Get inital volume
+  mpris_media_player2_player_set_volume(mpris.player, 1.0);
 }
 
-static void mpris_media_player_init()
-{
-  // Init the player too
-  mpris_player_init();
+/**
+  @brief  Initialize the MPRIS MediaPlayer2 object
 
+  @param  name Friendly name of the player
+  @retval none
+*/
+static void mpris_media_player_init(const char* name)
+{
   // Construct the MediaPlayer2 interface
   mpris.media_player = mpris_media_player2_skeleton_new();
 
@@ -87,10 +96,16 @@ static void mpris_media_player_init()
   mpris_media_player2_set_supported_mime_types(mpris.media_player, NULL);
 
   // Set a friendly name
-  // TODO Fetch assigned name from cmd
-  mpris_media_player2_set_identity(mpris.media_player, "GmediaRender");
+  mpris_media_player2_set_identity(mpris.media_player, name);
 }
 
+/**
+  @brief  Export MPRIS objects on the D-Bus at the provided path
+
+  @param  connection GDBusConnection received from bus_acquired callback
+  @param  path Path to export objects to
+  @retval none
+*/
 static void mpris_export(GDBusConnection* connection, const char* path)
 {
   // Export this interface on the bus
@@ -98,19 +113,41 @@ static void mpris_export(GDBusConnection* connection, const char* path)
   g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(mpris.player), connection, path, NULL);
 }
 
+/**
+  @brief  Set the playback status of the MPRIS player object
+
+  @param  status Playback status string
+  @retval none
+*/
 static void mpris_set_playback_status(const char* status)
 {
   mpris_media_player2_player_set_playback_status(mpris.player, status);
 }
 
+/**
+  @brief  Set the volume level of the MPRIS player object
+
+  @param  volume Volume fraction to set
+  @retval none
+*/
 static void mpris_set_volume(double volume)
 {
   mpris_media_player2_player_set_volume(mpris.player, volume);
 }
 
+/**
+  @brief  UPNP Transport callback that updates MPRIS playback state when TransportState variable changes
+
+  @param  userdata Unused
+  @param  var_num Unused
+  @param  variable_name Name of variable that was changed
+  @param  old_value unused
+  @param  new_value New value of variable that changed
+  @retval none
+*/
 static void mpris_transport_variable_callback(void* userdata, int var_num, const char* variable_name, const char* old_value, const char* new_value)
 {
-   if (strcmp(variable_name, "TransportState") != 0)
+  if (strcmp(variable_name, "TransportState") != 0)
     return;
 
   if (strcmp(new_value, "PLAYING") == 0)
@@ -123,14 +160,32 @@ static void mpris_transport_variable_callback(void* userdata, int var_num, const
     Log_error(TAG, "Unknown transport state '%s'.", new_value);
 }
 
+/**
+  @brief  UPNP Control callback that updates MPRIS state when Volume variable changes
+
+  @param  userdata Unused
+  @param  var_num Unused
+  @param  variable_name Name of variable that was changed
+  @param  old_value unused
+  @param  new_value New value of variable that changed
+  @retval none
+*/
 static void mpris_control_variable_callback(void* userdata, int var_num, const char* variable_name, const char* old_value, const char* new_value)
 {
-   if (strcmp(variable_name, "Volume") != 0)
+  if (strcmp(variable_name, "Volume") != 0)
     return;
 
   mpris_set_volume(strtod(new_value, NULL)/100);
 }
 
+/**
+  @brief  Callback when D-Bus is acquired.
+
+  @param  connection GDBusConnection to D-Bus
+  @param  name unused
+  @param  user_data unused
+  @retval none
+*/
 static void bus_acquired(GDBusConnection* connection, const gchar* name, gpointer user_data)
 {
   Log_info(TAG, "Acquired bus. Exporting MPRIS objects.");
@@ -138,19 +193,44 @@ static void bus_acquired(GDBusConnection* connection, const gchar* name, gpointe
   mpris_export(connection, MPRIS_PATH);
 }
 
+/**
+  @brief  Callback when name is acquired on the D-Bus.
+
+  @param  connection GDBusConnection to D-Bus
+  @param  name Name acquired on bus
+  @param  user_data unused
+  @retval none
+*/
 static void name_acquired(GDBusConnection* connection, const gchar* name, gpointer user_data)
 {
   Log_info(TAG, "Acquired '%s' on D-Bus.", name);
 }
 
+/**
+  @brief  Callback when name is lost on the D-Bus.
+
+  @param  connection GDBusConnection to D-Bus
+  @param  name Name lost on bus
+  @param  user_data unused
+  @retval none
+*/
 static void name_lost(GDBusConnection* connection, const gchar* name, gpointer user_data)
 {
   Log_error(TAG, "Lost '%s' on D-Bus.", name);
 }
 
-void mpris_configure(const char* uuid)
+/**
+  @brief  Callback when name is lost on the D-Bus.
+
+  @param  uuid UUID of this renderer
+  @param  friendly_name Friendly name of this renderer
+  @retval none
+*/
+void mpris_configure(const char* uuid, const char* friendly_name)
 {
-  mpris_media_player_init();
+  // Init the MPRIS objects
+  mpris_player_init();
+  mpris_media_player_init(friendly_name);
 
   // Construct a unique name for this instance
   char name[256] = {0};

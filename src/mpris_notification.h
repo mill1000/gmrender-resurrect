@@ -30,6 +30,6 @@
 #define MPRIS_PATH "/org/mpris/MediaPlayer2"
 #define MPRIS_BASE_NAME "org.mpris.MediaPlayer2.gmediarender.uuid"
 
-void mpris_configure(const char* uuid);
+void mpris_configure(const char* uuid, const char* friendly_name);
 
 #endif
