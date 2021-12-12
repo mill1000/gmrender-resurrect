@@ -51,5 +51,5 @@ if ENABLE_MPRIS
 DBUS_POLICY_DIR=$(DESTDIR)/etc/dbus-1/system.d
 DBUS_POLICY_TARGET=$(DBUS_POLICY_DIR)/gmrender-resurrect-mpris-policy.conf
 	mkdir -p $(DBUS_POLICY_DIR)
-	[ -f $(DBUS_POLICY_TARGET) ] || cp scripts/gmrender-resurrect-mpris-policy.conf $(DBUS_POLICY_TARGET)
+	[ -f $(DBUS_POLICY_TARGET) ] || cp ../scripts/gmrender-resurrect-mpris-policy.conf $(DBUS_POLICY_TARGET)
 endif
