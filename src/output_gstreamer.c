@@ -596,6 +596,16 @@ static int output_gstreamer_init(void)
 		output_gstreamer_set_volume(exp(initial_db / 20 * log(10)));
 	}
 
+	gint32 flags = 0;
+	g_object_get(player_, "flags", &flags, NULL);
+
+	Log_info("gstreamer", "Got flags 0x%08X.", flags);
+
+	flags &= ~0x00000010;
+	g_object_set(player_, "flags", flags, NULL);
+
+	Log_info("gstreamer", "Set flags 0x%08X.", flags);
+
 	return 0;
 }
 
