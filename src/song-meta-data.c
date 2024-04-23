@@ -66,7 +66,7 @@ static const char kDidlFooter[] = "</DIDL-Lite>";
 static char *generate_DIDL(const char *id,
 			   const char *title, const char *artist,
 			   const char *album, const char *genre,
-			   const char *composer) {
+			   const char *composer, const char *date, const char *track_number) {
 	char *result = NULL;
 	int ret = asprintf(&result, "%s\n<item id=\"%s\">\n"
 			  "\t<dc:title>%s</dc:title>\n"
@@ -74,11 +74,15 @@ static char *generate_DIDL(const char *id,
 			  "\t<upnp:album>%s</upnp:album>\n"
 			  "\t<upnp:genre>%s</upnp:genre>\n"
 			  "\t<upnp:creator>%s</upnp:creator>\n"
+				"\t<dc:date>%s</dc:date>\n"
+			  "\t<upnp:originalTrackNumber>%s</upnp:originalTrackNumber>\n"
 			  "</item>\n%s",
 			  kDidlHeader, id,
 			  title ? title : "", artist ? artist : "",
 			  album ? album : "", genre ? genre : "",
 			  composer ? composer : "",
+				date ? date : "",
+				track_number ? track_number : "",
 			  kDidlFooter);
 	return ret >= 0 ? result : NULL;
 }
@@ -152,6 +156,12 @@ int SongMetaData_parse_DIDL(struct SongMetaData *object, const char *xml) {
 	value_node = find_element_in_element(item_node, "upnp:genre");
 	if (value_node) object->genre = get_node_value(value_node);
 
+	value_node = find_element_in_element(item_node, "dc:date");
+	if (value_node) object->date = get_node_value(value_node);
+
+	value_node = find_element_in_element(item_node, "upnp:originalTrackNumber");
+	if (value_node) object->track_number = get_node_value(value_node);
+
 	xmldoc_free(doc);
 	return 1;
 }
@@ -169,15 +179,17 @@ char *SongMetaData_to_DIDL(const struct SongMetaData *object,
 	snprintf(unique_id, sizeof(unique_id), "gmr-%08x", xml_id++);
 
 	char *result;
-	char *title, *artist, *album, *genre, *composer;
+	char *title, *artist, *album, *genre, *composer, *date, *track_number;
 	title = object->title ? xmlescape(object->title, 0) : NULL;
 	artist = object->artist ? xmlescape(object->artist, 0) : NULL;
 	album = object->album ? xmlescape(object->album, 0) : NULL;
 	genre = object->genre ? xmlescape(object->genre, 0) : NULL;
 	composer = object->composer ? xmlescape(object->composer, 0) : NULL;
+	date = object->date ? xmlescape(object->date, 0) : NULL;
+	track_number = object->track_number ? xmlescape(object->track_number, 0) : NULL;
 	if (original_xml == NULL || strlen(original_xml) == 0) {
 		result = generate_DIDL(unique_id, title, artist, album,
-				       genre, composer);
+				       genre, composer, date, track_number);
 	} else {
 		int edits = 0;
 		// Otherwise, surgically edit the original document to give
@@ -195,6 +207,12 @@ char *SongMetaData_to_DIDL(const struct SongMetaData *object,
 		result = replace_range(result,
 				       "<upnp:creator>", "</upnp:creator>",
 				       composer, &edits);
+		result = replace_range(result,
+				       "<dc:date>", "</dc:date>",
+				       date, &edits);
+			result = replace_range(result,
+				       "<upnp:originalTrackNumber>", "</upnp:originalTrackNumber>",
+				       track_number, &edits);
 		if (edits) {
 			// Only if we changed the content, we generate a new
 			// unique id.
@@ -207,5 +225,7 @@ char *SongMetaData_to_DIDL(const struct SongMetaData *object,
 	free(album);
 	free(genre);
 	free(composer);
+	free(date);
+	free(track_number);
 	return result;
 }

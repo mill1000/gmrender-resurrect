@@ -31,6 +31,8 @@ struct SongMetaData {
 	const char *album;
 	const char *genre;
 	const char *composer;
+	const char *date;
+	const char *track_number; // TODO should be an int
 };
 
 // Construct song meta data object.
